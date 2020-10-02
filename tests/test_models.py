@@ -6,51 +6,61 @@ from impressoras import config
 from impressoras.models import Base, User
 
 
-@pytest.fixture(scope='module')
-def Session():
+@pytest.fixture(scope="module")
+def database():
     engine = create_engine(config.TEST_DATABASE_URL, echo=True)
-    Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
-    yield Session
-    Base.metadata.drop_all(engine)
+    yield Session, engine
     engine.dispose()
 
 
 @pytest.fixture()
-def session(Session):
+def session(database):
+    Session, engine = database
+    Base.metadata.create_all(engine)
     session = Session()
     yield session
-    session.rollback()
     session.close()
+    Base.metadata.drop_all(engine)
 
 
-def test_user_crud(session):
-    # Create
-    alice = User(name='alice', password='0' * 128)
+@pytest.fixture()
+def alice(session):
+    alice = User(name="alice", password="0" * 128)
     session.add(alice)
-    session.flush()
+    session.commit()
+    return alice
 
-    # Read
+
+def test_user_create(session):
+    alice = User(name="alice", password="0" * 128)
+    session.add(alice)
+    session.commit()
+
+
+def test_user_read(alice, session):
     user = session.query(User).first()
     assert user is alice
     assert user.id == 1
-    assert user.name == 'alice'
-    assert user.password == '0' * 128
+    assert user.name == "alice"
+    assert user.password == "0" * 128
 
-    # Update
-    alice.password = '1' * 128
+
+def test_user_update(alice, session):
+    alice.password = "1" * 128
     session.add(alice)
-    session.flush()
-    
+    session.commit()
+
     user = session.query(User).first()
     assert user is alice
     assert user.id == 1
-    assert user.name == 'alice'
-    assert user.password == '1' * 128
+    assert user.name == "alice"
+    assert user.password == "1" * 128
 
-    # Delete
+
+def test_user_delete(alice, session):
     session.delete(alice)
-    session.flush()
+    session.commit()
 
     user = session.query(User).first()
     assert user is None
