@@ -1,0 +1,12 @@
+[flake8]
+select = B,B9,BLK,C,E,F,I,S,W
+max-complexity = 10
+application-import-names = impressoras,tests
+import-order-style = google
+max-line-length = 80
+# E203: whitespace before ':' (conflicts with black)
+# E501: max-line-length (replaced by more tolerant B950)
+# W503: line break before binary operation (conflicts with black)
+ignore=E203,E501,W503
+# S101: forbids asserts (pytest should be allowed to assert)
+per-file-ignores = tests/*:S101
